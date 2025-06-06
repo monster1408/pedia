@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MySearch with MiniGames</title>
+  <style>
+    :root {
+      --bg: #f8f9fa;
+      --text: #000;
+      --card: #fff;
+    }
+
+    [data-theme="dark"] {
+      --bg: #121212;
+      --text: #f1f1f1;
+      --card: #1e1e1e;
+    }
+
+    [data-theme="light"] {
+      --bg: #f8f9fa;
+      --text: #000;
+      --card: #fff;
+    }
+
+    html, body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+      min-height: 100vh;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    .container {
+      margin-top: 12vh;
+      padding: 0 10px;
+    }
+
+    .logo {
+      font-size: 42px;
+      color: #4285f4;
+      margin-bottom: 20px;
+    }
+
+    input[type="text"] {
+      width: 90%;
+      max-width: 500px;
+      padding: 12px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 24px;
+      background-color: var(--card);
+      color: var(--text);
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    .buttons {
+      margin-top: 15px;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      font-size: 14px;
+      border: none;
+      border-radius: 4px;
+      background-color: var(--card);
+      color: var(--text);
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    button:hover {
+      opacity: 0.85;
+    }
+
+    .results, .history {
+      margin-top: 30px;
+      padding: 10px;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+      background-color: var(--card);
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      transition: background-color 0.3s, color 0.3s;
+    }
+    #calcResults {
+      margin-top: 30px;
+      padding: 10px;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+      background-color: var(--card);
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    #memoArea {
+      margin-top: 30px;
+      padding: 10px;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+      background-color: var(--card);
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .history ul {
+      list-style: none;
+      padding: 0;
+      max-height: 200px;
+      overflow-y: auto;
+      margin: 0;
+    }
+
+    .history li {
+      margin: 5px 0;
+    }
+
+    .history a {
+      text-decoration: none;
+      color: #1a73e8;
+      cursor: pointer;
+    }
+
+    .history a:hover {
+      text-decoration: underline;
+    }
+
+    a.result-link {
+      color: #1a0dab;
+      text-decoration: none;
+      word-break: break-word;
+    }
+
+    a.result-link:hover {
+      text-decoration: underline;
+    }
+
+    /* テーマ切り替えボタンの位置 */
+    #themeToggle {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 100;
+    }
+
+    /* ミニゲームエリア */
+    #miniGame {
+      margin-top: 30px;
+      padding: 15px;
+      border-top: 2px solid #ccc;
+      text-align: center;
+    }
+
+    @media (max-width: 600px) {
+      .logo {
+        font-size: 28px;
+      }
+      input[type="text"] {
+        width: 100%;
+      }
+      .results, .history {
+        width: 95%;
+        padding: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="themeToggle">
+    <button onclick="toggleTheme()">テーマ切り替え</button>
+  </div>
+
+  <div class="container" id="mainView">
+    <h1 class="logo">MySearch</h1>
+    <form id="searchForm">
+      <input type="text" id="queryInput" placeholder="検索語句を入力" required autocomplete="off" />
+      <div class="buttons">
+        <button type="submit">検索</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="results" id="resultsArea" style="display:none;"></div>
+  <div id="results"></div>
+  <div class="buttons" id="clearButtons" style="display: none;">
+    <button onclick="clearResults()">検索結果を削除</button>
+  </div>
+
+  <div class="history" id="historyArea" style="display: none;">
+    <h2>検索履歴</h2>
+    <ul id="historyList"></ul>
+    <button onclick="clearHistory()">検索履歴を削除</button>
+  </div>
+
+  <!-- ミニゲーム表示場所 -->
+  <div class="results" id="miniGame" style="display:none;"></div>
+
+  <div class="results" id="memoArea">
+    <h2>📝 メモ</h2>
+    <textarea id="memoInput" rows="4" style="width: 90%; max-width: 500px;"></textarea><br />
+    <button onclick="saveMemo()">メモを保存</button>
+    <button onclick="clearMemo()">メモを削除</button>
+    <div id="savedMemo" style="margin-top: 10px; white-space: pre-wrap;"></div>
+  </div>
+  <script>
+    const form = document.getElementById("searchForm");
+    const mainView = document.getElementById("mainView");
+    const results = document.getElementById("resultsArea");
+    const historyArea = document.getElementById("historyArea");
+    const historyList = document.getElementById("historyList");
+    const clearButtons = document.getElementById("clearButtons");
+    const miniGameDiv = document.getElementById("miniGame");
+    const resultsList = [];
+    // テーマ切り替え機能
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute("data-theme");
+      const newTheme = current === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", newTheme);
+      localStorage.setItem("theme", newTheme);
+    }
+
+    // ページ読み込み時に保存テーマを適用
+    window.addEventListener("DOMContentLoaded", () => {
+      const savedTheme = localStorage.getItem("theme");
+      if (savedTheme) {
+        document.documentElement.setAttribute("data-theme", savedTheme);
+      }
+      const history = JSON.parse(localStorage.getItem("searchHistory"));
+      if (history && history.length > 0) {
+        historyArea.style.display = "block";
+        renderHistory();
+      }
+    });
+
+    form.addEventListener("submit",async function(event) {
+      event.preventDefault();
+      const query = document.getElementById("queryInput").value.trim();
+      resultsList.length = 0; // 検索結果リストを初期化
+      if (query) {
+        mainView.style.display = "none";
+        results.style.display = "block";
+        clearButtons.style.display = "block";
+        historyArea.style.display = "block";
+        miniGameDiv.style.display = "block";
+
+        const timestamp = new Date().toLocaleString();
+	if (query.startsWith("計算:")) {
+          const expression = query.slice(3).trim();
+          try {
+            if (/^[0-9+\-*/().\s]+$/.test(expression)) {
+              const result = eval(expression);
+              resultsList.push(`
+                <div>🧮 「<strong>${expression}</strong>」の計算結果（${timestamp}）</div>
+                <p><strong>${result}</strong></p>
+              `);
+            } else {
+              resultsList.push(`<div>「${expression}」は有効な式ではありません。式を入力してください。</div>`);
+            }
+          } catch {
+            resultsList.push(`<div>計算中にエラーが発生しました。式を正しく入力してください。</div>`);
+          }
+          setupMiniGames();
+        }
+        if (query.toLowerCase() === "google") {
+          showGoogleResult(query, timestamp);
+        } 
+        if (/\.(com|net|org|jp|co\.jp|info|biz|site|dev|app)$/.test(query.toLowerCase())) {
+          showDomainResult(query, timestamp);
+        }
+          await searchWikipedia(query, timestamp); 
+        for (let i = 0; i < resultsList.length; i++) {
+          const div = document.createElement('div');
+          div.innerHTML = resultsList[i];
+          results.appendChild(div);
+        }
+
+        saveToHistory(query);
+        renderHistory();
+      }
+    });
+
+    function showGoogleResult(query, timestamp) {
+      resultsList.push(`
+        <div>🔍 「<strong>${query}</strong>」の検索結果（${timestamp}）</div>
+        <a class="result-link" href="https://www.google.com" target="_blank" rel="noopener noreferrer">Google公式サイト</a>
+      `);
+      setupMiniGames();
+    }
+
+    function showDomainResult(query, timestamp) {
+      resultsList.push(`
+        <div>🔗 「<strong>${query}</strong>」のリンク（${timestamp}）</div>
+        <a class="result-link" href="https://${query}" target="_blank" rel="noopener noreferrer">${query}</a>
+      `);
+      setupMiniGames();
+    }
+
+    async function searchWikipedia(query, timestamp) {
+      const apiUrl = `https://ja.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`;
+      
+
+      fetch(apiUrl)
+        try {
+          const response = await fetch(apiUrl);
+          if (!response.ok) throw new Error("見つかりませんでした");
+          const data = await response.json();
+
+          if (data.extract) {
+              resultsList.push(`
+                  <div>📘 Wikipedia「<strong>${data.title}</strong>」の要約（${timestamp}）</div>
+                  <p>${data.extract}</p>
+                  <a class="result-link" href="${data.content_urls.desktop.page}" target="_blank" rel="noopener noreferrer">Wikipediaで全文を読む</a>
+              `);
+          } else {
+              resultsList.push(`<div>「${query}」に関する情報は見つかりませんでした。</div>`);
+          }
+      } catch (error) {
+          resultsList.push(`<div>「${query}」に関するWikipedia情報は見つかりませんでした。</div>`);
+      } finally {
+         setupMiniGames();
+      }
+    }
+
+    // 検索履歴保存
+    function saveToHistory(query) {
+      let history = JSON.parse(localStorage.getItem("searchHistory")) || [];
+      history = history.filter(item => item !== query);
+      history.unshift(query);
+      if (history.length > 10) history = history.slice(0, 10);
+      localStorage.setItem("searchHistory", JSON.stringify(history));
+    }
+
+    // 検索履歴表示
+    function renderHistory() {
+      let history = JSON.parse(localStorage.getItem("searchHistory")) || [];
+      historyList.innerHTML = "";
+      history.forEach(item => {
+        const li = document.createElement("li");
+        const a = document.createElement("a");
+        a.textContent = item;
+        a.href = "#";
+        a.addEventListener("click", e => {
+          e.preventDefault();
+          document.getElementById("queryInput").value = item;
+          form.dispatchEvent(new Event("submit"));
+        });
+        li.appendChild(a);
+        historyList.appendChild(li);
+      });
+      historyArea.style.display = history.length ? "block" : "none";
+    }
+
+    // 検索結果クリア
+    function clearResults() {
+      results.innerHTML = "";
+      results.style.display = "none";
+      clearButtons.style.display = "none";
+      mainView.style.display = "block";
+
+      miniGameDiv.innerHTML = "";
+      miniGameDiv.style.display = "none";
+    }
+
+    // 検索履歴クリア
+    function clearHistory() {
+      localStorage.removeItem("searchHistory");
+      historyList.innerHTML = "";
+      historyArea.style.display = "none";
+      docment.getElementById(calcResults).style.display = "none";
+    }
+
+    // ミニゲームのセットアップ（２つのゲーム）
+    function setupMiniGames() {
+      miniGameDiv.innerHTML = `
+        <h3>🎮 10秒クリックチャレンジゲーム</h3>
+        <p>スタートボタンを押して10秒間にできるだけたくさんクリックしよう！</p>
+        <button id="startGameBtn">ゲームスタート</button>
+        <div id="gameArea" style="margin-top: 15px; display:none;">
+          <button id="clickBtn" style="font-size: 20px; padding: 10px 20px;">クリック！</button>
+          <p>残り時間: <span id="timeLeft">10</span> 秒</p>
+          <p>クリック数: <span id="clickCount">0</span></p>
+        </div>
+        <div id="gameResult" style="margin-top: 15px; font-weight: bold;"></div>
+
+        <hr style="margin: 30px 0; border: 1px solid #ccc;" />
+
+        <h3>⏱️ 時間ぴったりで止めるゲーム</h3>
+        <p>スタートボタンを押してタイマーを開始。5秒ぴったりで止めてみよう！</p>
+        <button id="startTimerBtn">タイマースタート</button>
+        <button id="stopTimerBtn" disabled>止める</button>
+        <p>経過時間: <span id="timerCount">0.00</span> 秒</p>
+        <p id="timerResult" style="font-weight: bold; margin-top: 10px;"></p>
+      `;
+
+      // クリックゲームの変数と処理
+      const startBtn = document.getElementById("startGameBtn");
+      const gameArea = document.getElementById("gameArea");
+      const clickBtn = document.getElementById("clickBtn");
+      const timeLeftSpan = document.getElementById("timeLeft");
+      const clickCountSpan = document.getElementById("clickCount");
+      const gameResult = document.getElementById("gameResult");
+
+      let timerId = null;
+      let timeLeft = 10;
+      let clickCount = 0;
+
+      startBtn.addEventListener("click", () => {
+        timeLeft = 10;
+        clickCount = 0;
+        timeLeftSpan.textContent = timeLeft;
+        clickCountSpan.textContent = clickCount;
+        gameResult.textContent = "";
+        gameArea.style.display = "block";
+        startBtn.disabled = true;
+
+        timerId = setInterval(() => {
+          timeLeft--;
+          timeLeftSpan.textContent = timeLeft;
+          if (timeLeft <= 0) {
+            clearInterval(timerId);
+            gameResult.textContent = `ゲーム終了！あなたのクリック数は ${clickCount} 回です。`;
+            startBtn.disabled = false;
+            gameArea.style.display = "none";
+          }
+        }, 1000);
+      });
+
+      clickBtn.addEventListener("click", () => {
+        if (timeLeft > 0) {
+          clickCount++;
+          clickCountSpan.textContent = clickCount;
+        }
+      });
+
+      // タイマーゲームの変数と処理
+      const startTimerBtn = document.getElementById("startTimerBtn");
+      const stopTimerBtn = document.getElementById("stopTimerBtn");
+      const timerCountSpan = document.getElementById("timerCount");
+      const timerResult = document.getElementById("timerResult");
+
+      let startTime = 0;
+      let timerInterval = null;
+
+      startTimerBtn.addEventListener("click", () => {
+        timerResult.textContent = "";
+        timerCountSpan.textContent = "0.00";
+        startTimerBtn.disabled = true;
+        stopTimerBtn.disabled = false;
+
+        startTime = performance.now();
+        timerInterval = setInterval(() => {
+          let elapsed = (performance.now() - startTime) / 1000;
+          timerCountSpan.textContent = elapsed.toFixed(2);
+        }, 10);
+      });
+
+      stopTimerBtn.addEventListener("click", () => {
+        clearInterval(timerInterval);
+        stopTimerBtn.disabled = true;
+        startTimerBtn.disabled = false;
+
+        let elapsed = (performance.now() - startTime) / 1000;
+        timerCountSpan.textContent = elapsed.toFixed(2);
+
+        let diff = Math.abs(elapsed - 5);
+        if (diff < 0.1) {
+          timerResult.textContent = `すごい！ほぼ5秒ぴったりです！（誤差 ${diff.toFixed(2)} 秒）`;
+        } else if (diff < 0.5) {
+          timerResult.textContent = `惜しい！5秒からの誤差は ${diff.toFixed(2)} 秒です。`;
+        } else {
+          timerResult.textContent = `残念！5秒からの誤差は ${diff.toFixed(2)} 秒です。`;
+        }
+      });
+    }
+    // メモ保存
+    function saveMemo() {
+      const memoText = document.getElementById("memoInput").value;
+      localStorage.setItem("myMemo", memoText);
+      renderMemo();
+    }
+
+    // メモ削除
+    function clearMemo() {
+      localStorage.removeItem("myMemo");
+      document.getElementById("memoInput").value = "";
+      renderMemo();
+    }
+
+    // メモ表示
+    function renderMemo() {
+      const memo = localStorage.getItem("myMemo") || "";
+      document.getElementById("savedMemo").textContent = memo;
+      document.getElementById("memoInput").value = memo;
+    }
+
+    // ページ読み込み時にメモも表示
+    window.addEventListener("DOMContentLoaded", () => {
+      // 既存の処理に追加
+      renderMemo();
+    });
+  </script>
+</body>
+</html>
