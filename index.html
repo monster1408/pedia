@@ -242,6 +242,7 @@
     });
 
     form.addEventListener("submit",async function(event) {
+      clearResults()
       event.preventDefault();
       const query = document.getElementById("queryInput").value.trim();
       resultsList.length = 0; // 検索結果リストを初期化
